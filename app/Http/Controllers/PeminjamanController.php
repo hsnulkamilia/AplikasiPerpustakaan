@@ -2,71 +2,79 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\peminjaman;
+use App\Models\Anggota;
+use App\Models\Buku;
+use App\Models\Peminjaman;
 use Illuminate\View\View;
-use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 
 class PeminjamanController extends Controller
 {
     public function index(): View
     {
-       $dataPeminjaman = peminjaman::latest()->paginate(10);
-       return view('peminjaman.index',compact('dataPeminjaman'));
+        $peminjaman = Peminjaman::latest()->paginate(10);
+        return view('levelAdmin.peminjaman.index', compact('peminjaman'));
     }
 
-    public function create(): View
+    public function create()
     {
-        return view('peminjaman.create');
+        $buku = Buku::all();
+        $anggota = Anggota::all();
+        return view('levelAdmin.peminjaman.create', compact('buku', 'anggota'));
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request)
     {
-       
-        //validate form
         $request->validate([
-            'nama_peminjaman'      => 'required|min:2|unique:peminjaman,nama_peminjaman'
+            'no_buku' => 'required',
+            'id_anggota' => 'required',
+            'tgl_peminjaman' => 'required',
+            'tgl_pengembalian' => 'required',
+            'status' => 'required',
         ]);
 
-        Peminjaman::create([
-            'nama_peminjaman'        => $request->nama_peminjaman,
-        ]);
-        //redirect to index
-        return redirect()->route('peminjaman.index')->with(['success' => 'Data Berhasil Disimpan!']);
-    }
+        Peminjaman::create($request->all());
 
-    public function edit(string $id): View
-    {
-        $dataPeminjaman = Peminjaman::findOrFail($id);
-        return view('peminjaman.edit', compact('dataPeminjaman'));
+        return redirect()->route('admin.peminjaman.index')
+            ->with('success', 'peminjaman berhasil ditambahkan.');
     }
 
     public function show(string $id): View
     {
-        $Peminjaman = Peminjaman::findOrFail($id);
+        $peminjaman = Peminjaman::findOrFail($id);
 
-        return view('peminjaman.show', compact('peminjaman'));
+        return view('levelAdmin.peminjaman.show', compact('peminjaman'));
+    }
+    public function edit(string $id)
+    {
+        $peminjaman = Peminjaman::findOrFail($id);
+        $buku = Buku::all();
+        $anggota = Anggota::all();
+        return view('levelAdmin.peminjaman.edit', compact('peminjaman', 'buku', 'anggota'));
     }
 
     public function update(Request $request, $id): RedirectResponse
     {
-        //validate form
         $request->validate([
-            'nama_peminjaman'      => 'required|min:2'
+            'no_buku' => 'required',
+            'id_anggota' => 'required',
+            'tgl_peminjaman' => 'required',
+            'tgl_pengembalian' => 'required',
+            'status' => 'required',
         ]);
 
-        $dataPeminjaman = Peminjaman::findOrFail($id);
-        $dataPeminjaman->update([
-             'nama_peminjaman'  => $request->nama_peminjaman
-            ]);
+        $peminjaman = Peminjaman::findOrFail($id);
+        $peminjaman->update($request->all());
 
-        return redirect()->route('peminjaman.index')->with(['success' => 'Data Berhasil Diubah!']);
+        return redirect()->route('admin.peminjaman.index')
+            ->with('success', 'Data peminjaman berhasil diubah!.');
     }
 
     public function destroy($id): RedirectResponse
     {
         $peminjaman = Peminjaman::findOrFail($id);
         $peminjaman->delete();
-        return redirect()->route('peminjaman.index')->with(['success' => 'Data Berhasil Dihapus!']);
+        return redirect()->route('admin.peminjaman.index')->with(['success' => 'Data peminjaman Berhasil Dihapus!']);
     }
 }

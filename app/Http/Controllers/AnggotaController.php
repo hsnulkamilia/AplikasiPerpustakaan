@@ -2,56 +2,71 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Anggota;
-use Illuminate\Validation\Rule;
+use Illuminate\View\View;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 
 class AnggotaController extends Controller
 {
-    public function index()
+    public function index(): View
     {
-        $anggota = Anggota::all();
-        return view('anggota.index', ['anggota' => $anggota]);
+        $anggota = Anggota::latest()->paginate(10);
+        return view('levelAdmin.anggota.index', compact('anggota'));
+    }
+
+    public function create()
+    {
+        return view('levelAdmin.anggota.create');
     }
 
     public function store(Request $request)
     {
         $request->validate([
-            'nama' => 'required|string|max:255|regex:/^[a-zA-Z\s]+$/',
-            'no_hp' => [
-                'required',
-                'string',
-                'max:15',
-                'regex:/^[0-9]+$/',
-                Rule::unique('anggota')->ignore($request->anggota_id), // Exclude the current Anggota record being updated
-            ],
-            'email' => [
-                'required',
-                'email',
-                Rule::unique('anggota')->ignore($request->anggota_id), // Exclude the current Anggota record being updated
-            ],
-            'alamat' => 'required|string|max:255',
-        ], [
-            'no_hp.unique' => 'The phone number has already been used.',
-            'email.unique' => 'The email has already been taken.',
+            'nama' => 'required',
+            'no_hp' => 'required',
+            'alamat' => 'required',
+            'email' => 'required',
         ]);
 
-        // Create or update an Anggota instance based on the existence of anggota_id
-        if ($request->anggota_id) {
-            $anggota = Anggota::findOrFail($request->anggota_id);
-        } else {
-            $anggota = new Anggota();
-        }
+        Anggota::create($request->all());
 
-        $anggota->nama = $request->nama;
-        $anggota->no_hp = $request->no_hp;
-        $anggota->email = $request->email;
-        $anggota->alamat = $request->alamat;
+        return redirect()->route('admin.anggota.index')
+            ->with('success', 'anggota berhasil ditambahkan.');
+    }
 
-        // Save the anggota to the database
-        $anggota->save();
+    public function show(string $id): View
+    {
+        $anggota = Anggota::findOrFail($id);
 
-        // Redirect the user to the route corresponding to the book form
-        return redirect()->route('buku.index')->with('success', 'Anggota data submitted successfully!');
+        return view('levelAdmin.anggota.show', compact('anggota'));
+    }
+    public function edit(string $id)
+    {
+        $anggota = Anggota::findOrFail($id);
+        return view('levelAdmin.anggota.edit', compact('anggota'));
+    }
+
+    public function update(Request $request, $id): RedirectResponse
+    {
+        $request->validate([
+            'nama' => 'required',
+            'no_hp' => 'required',
+            'alamat' => 'required',
+            'email' => 'required',
+        ]);
+
+        $anggota = Anggota::findOrFail($id);
+        $anggota->update($request->all());
+
+        return redirect()->route('admin.anggota.index')
+            ->with('success', 'Data anggota berhasil diubah!.');
+    }
+
+    public function destroy($id): RedirectResponse
+    {
+        $anggota = Anggota::findOrFail($id);
+        $anggota->delete();
+        return redirect()->route('admin.anggota.index')->with(['success' => 'Data anggota Berhasil Dihapus!']);
     }
 }
